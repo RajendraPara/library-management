@@ -371,16 +371,39 @@ body {
     height: 100%;
     background-color: rgba(0,0,0,0.5);
     animation: fadeIn 0.3s;
+    overflow-y: auto;
 }
 
 .modal-content {
     background-color: white;
-    margin: 5% auto;
+    margin: 3% auto;
     padding: 2rem;
     border-radius: 10px;
     width: 90%;
-    max-width: 500px;
+    max-width: 600px;
+    max-height: 85vh;
+    overflow-y: auto;
     animation: slideIn 0.3s;
+    position: relative;
+}
+
+/* Custom scrollbar for modal */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 10px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: #5568d3;
 }
 
 @keyframes slideIn {
@@ -388,41 +411,23 @@ body {
     to { transform: translateY(0); opacity: 1; }
 }
 
+/* Close button */
 .close {
     color: #aaa;
-    float: right;
+    position: absolute;
+    right: 1.5rem;
+    top: 1.5rem;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
+    z-index: 1;
+    line-height: 1;
 }
 
 .close:hover {
     color: #000;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .form-row {
-        grid-template-columns: 1fr;
-    }
-
-    .books-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .nav-container {
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .book-actions {
-        flex-direction: column;
-    }
-
-    .book-actions .btn {
-        width: 100%;
-    }
-}
 /* Search Container */
 .search-container {
     display: flex;
@@ -483,39 +488,104 @@ body {
 
 /* Book Details Modal Content */
 .book-details-full {
-    padding: 1rem 0;
+    padding: 0.5rem 0;
 }
 
 .book-details-full h2 {
     color: #667eea;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    padding-right: 2rem;
 }
 
 .book-details-full .detail-row {
-    margin: 0.75rem 0;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #e0e0e0;
+    margin: 1rem 0;
+    padding: 0.75rem;
+    background: #f7fafc;
+    border-radius: 5px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .book-details-full .detail-label {
     font-weight: 600;
     color: #333;
-    margin-right: 0.5rem;
+    min-width: 140px;
 }
 
 .book-details-full .detail-value {
     color: #666;
+    flex: 1;
 }
 
 .book-details-full .description {
-    margin: 1rem 0;
+    margin: 1.5rem 0;
     padding: 1rem;
     background: #f7fafc;
     border-radius: 5px;
     line-height: 1.6;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
+.book-details-full .description::-webkit-scrollbar {
+    width: 6px;
+}
+
+.book-details-full .description::-webkit-scrollbar-track {
+    background: #e2e8f0;
+    border-radius: 10px;
+}
+
+.book-details-full .description::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 10px;
+}
+
+/* Sticky action buttons at bottom of modal */
+.book-details-full .book-actions {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 2px solid #e0e0e0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    position: sticky;
+    bottom: 0;
+    background: white;
+    padding-bottom: 0.5rem;
+}
+
+.book-details-full .book-actions .btn {
+    flex: 1;
+    min-width: 150px;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .books-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .nav-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .book-actions {
+        flex-direction: column;
+    }
+
+    .book-actions .btn {
+        width: 100%;
+    }
+
     .search-container {
         flex-direction: column;
         width: 100%;
@@ -528,5 +598,34 @@ body {
 
     .search-container .btn {
         width: 100%;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 5% auto;
+        max-height: 90vh;
+        padding: 1.5rem;
+    }
+
+    .book-details-full h2 {
+        font-size: 1.3rem;
+    }
+
+    .book-details-full .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .book-details-full .detail-label {
+        min-width: auto;
+    }
+
+    .book-details-full .book-actions {
+        flex-direction: column;
+    }
+
+    .book-details-full .book-actions .btn {
+        width: 100%;
+        min-width: auto;
     }
 }
