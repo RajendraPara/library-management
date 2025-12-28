@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<!-- Navigation -->
+<nav class="navbar" id="navbar">
+    <div class="nav-container">
+        <div class="nav-brand">📚 Library Management</div>
+        <div class="nav-links" id="navLinks">
+            <a href="#" class="nav-link" onclick="showSection('login')">Login</a>
+            <a href="#" class="nav-link" onclick="showSection('register')">Register</a>
+        </div>
+        <div class="nav-user" id="navUser" style="display: none;">
+            <span class="user-info" id="userInfo"></span>
+            <button class="btn btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Container -->
+<div class="container">
+    <!-- Login Section -->
+    <div id="loginSection" class="section active">
+        <div class="auth-card">
+            <h2>Login</h2>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="loginUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <p class="auth-link">
+                    Don't have an account? <a href="#" onclick="showSection('register')">Register here</a><br>
+                    <a href="#" onclick="showSection('forgotPassword')">Forgot Password?</a>
+                </p>
+            </form>
+            <div id="loginMessage" class="message"></div>
+        </div>
+    </div>
+
+    <!-- Register Section -->
+    <div id="registerSection" class="section">
+        <div class="auth-card">
+            <h2>Register</h2>
+            <form id="registerForm" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="regUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="regEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="regPassword" required>
+                </div>
+                <div class="form-group">
+                    <label>Select Role</label>
+                    <select id="regRole" required>
+                        <option value="">Choose Role</option>
+                        <option value="USER">User</option>
+                        <option value="ADMIN">Admin</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Register</button>
+                <p class="auth-link">Already have an account? <a href="#" onclick="showSection('login')">Login here</a></p>
+            </form>
+            <div id="registerMessage" class="message"></div>
+        </div>
+    </div>
+    <!-- Forgot Password Section -->
+    <div id="forgotPasswordSection" class="section">
+        <div class="auth-card">
+            <h2>Reset Password</h2>
+            <form id="forgotPasswordForm" onsubmit="handleForgotPassword(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="forgotEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>New Password</label>
+                    <input type="password" id="forgotNewPassword" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="forgotConfirmPassword" required minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary">Reset Password</button>
+                <p class="auth-link">Remember your password? <a href="#" onclick="showSection('login')">Login here</a></p>
+            </form>
+            <div id="forgotPasswordMessage" class="message"></div>
+        </div>
+    </div>
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="section">
+        <div class="dashboard">
+            <h2>Library Dashboard</h2>
+
+            <!-- Admin Controls -->
+            <div id="adminControls" style="display: none;">
+                <div class="admin-panel">
+                    <h3>Add New Book</h3>
+                    <form id="addBookForm" onsubmit="handleAddBook(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Title</label>
+                                <input type="text" id="bookTitle" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Author</label>
+                                <input type="text" id="bookAuthor" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>ISBN</label>
+                                <input type="text" id="bookIsbn" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Total Copies</label>
+                                <input type="number" id="bookCopies" min="1" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="bookDescription" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success">Add Book</button>
+                    </form>
+                    <div id="addBookMessage" class="message"></div>
+                </div>
+            </div>
+
+            <!-- Books List -->
+            <div class="books-section">
+                <div class="section-header">
+                    <h3>Available Books</h3>
+                    <div class="search-container">
+                        <input type="text" id="bookSearch" placeholder="🔍 Search by title, author, or ISBN..." onkeyup="filterBooks()">
+                        <button class="btn btn-primary" onclick="loadBooks()">🔄 Refresh</button>
+                    </div>
+                </div>
+                <div id="booksList" class="books-grid"></div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Edit Book Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditModal()">&times;</span>
+        <h3>Edit Book</h3>
+        <form id="editBookForm" onsubmit="handleEditBook(event)">
+            <input type="hidden" id="editBookId">
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="editBookTitle" required>
+            </div>
+            <div class="form-group">
+                <label>Author</label>
+                <input type="text" id="editBookAuthor" required>
+            </div>
+            <div class="form-group">
+                <label>ISBN</label>
+                <input type="text" id="editBookIsbn" required>
+            </div>
+            <div class="form-group">
+                <label>Total Copies</label>
+                <input type="number" id="editBookCopies" min="1" required>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="editBookDescription" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Book</button>
+        </form>
+    </div>
+</div>
+<!-- Book Details Modal -->
+<div id="bookDetailsModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeBookDetailsModal()">&times;</span>
+        <div id="bookDetailsContent"></div>
+    </div>
+</div>
+
+<!-- Issue Book to User Modal (Admin) -->
+<div id="issueToUserModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeIssueToUserModal()">&times;</span>
+        <h3>Issue Book to User</h3>
+        <form id="issueToUserForm" onsubmit="handleIssueToUser(event)">
+            <input type="hidden" id="issueBookId">
+            <div class="form-group">
+                <label>Book Title</label>
+                <input type="text" id="issueBookTitle" disabled>
+            </div>
+            <div class="form-group">
+                <label>Select User</label>
+                <select id="issueUserId" required>
+                    <option value="">Choose User</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Issue Book</button>
+        </form>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
