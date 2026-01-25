@@ -16,4 +16,7 @@ public class BookResponse {
     private Integer availableCopies;
     private String description;
     private boolean available;
+
+    public BookResponse(long l, String cleanCode, String robertMartin) {
+    }
 }

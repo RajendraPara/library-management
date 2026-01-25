@@ -13,4 +13,7 @@ public class BookRequest {
     private String isbn;
     private Integer totalCopies;
     private String description;
+
+    public BookRequest(String refactoring, String martinFowler) {
+    }
 }

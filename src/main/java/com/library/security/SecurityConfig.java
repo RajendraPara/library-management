@@ -50,17 +50,29 @@ public class SecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        // 1. Use the empty constructor
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
+        // 1. Use the NO-ARGS constructor
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
 
-        // 2. Set the service here (This is where the magic happens)userDetailsService
-       // authProvider.setUserDetailsService(userDetailsService);
+        // 2. Set the UserDetailsService
+        authProvider.setUserDetailsService(userDetailsService);
 
-        // 3. Set the encoder
+        // 3. Set the PasswordEncoder
         authProvider.setPasswordEncoder(passwordEncoder());
 
         return authProvider;
     }
+//    public DaoAuthenticationProvider authenticationProvider() {
+//        // 1. Use the empty constructor
+//        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService);
+//
+//        // 2. Set the service here (This is where the magic happens)userDetailsService
+//       // authProvider.setUserDetailsService(userDetailsService);
+//
+//        // 3. Set the encoder
+//        authProvider.setPasswordEncoder(passwordEncoder());
+//
+//        return authProvider;
+//    }
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
