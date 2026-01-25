@@ -13,4 +13,7 @@ public class RegisterRequest {
     private String password;
     private String email;
     private User.Role role;
+
+    public RegisterRequest(String username, String mail, String pass) {
+    }
 }

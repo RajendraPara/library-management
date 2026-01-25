@@ -2,9 +2,14 @@ package com.library.service;
 
 import com.library.dto.BookRequest;
 import com.library.dto.BookResponse;
+import com.library.dto.UserSummaryDTO;
 import com.library.entity.Book;
 import com.library.entity.BookIssue;
 import com.library.entity.User;
+import com.library.exception.BadRequestException;
+import com.library.exception.ConflictException;
+import com.library.exception.ForbiddenException;
+import com.library.exception.ResourceNotFoundException;
 import com.library.repository.BookIssueRepository;
 import com.library.repository.BookRepository;
 import com.library.repository.UserRepository;
@@ -12,13 +17,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
-import com.library.dto.UserSummaryDTO;
 
 @Service
 public class BookService {
+
     @Autowired
     private BookRepository bookRepository;
 
@@ -28,7 +34,13 @@ public class BookService {
     @Autowired
     private UserRepository userRepository;
 
+    // ================= ADD BOOK =================
     public BookResponse addBook(BookRequest request) {
+
+        if (request.getTitle() == null || request.getTotalCopies() <= 0) {
+            throw new BadRequestException("Invalid book details");
+        }
+
         Book book = new Book();
         book.setTitle(request.getTitle());
         book.setAuthor(request.getAuthor());
@@ -37,65 +49,80 @@ public class BookService {
         book.setAvailableCopies(request.getTotalCopies());
         book.setDescription(request.getDescription());
 
-        book = bookRepository.save(book);
-        return mapToResponse(book);
+        return mapToResponse(bookRepository.save(book));
     }
 
+    // ================= UPDATE BOOK =================
     public BookResponse updateBook(Long id, BookRequest request) {
+
         Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Book not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Book not found with id: " + id));
+
+        int difference = request.getTotalCopies() - book.getTotalCopies();
+        if (book.getAvailableCopies() + difference < 0) {
+            throw new BadRequestException("Total copies cannot be less than issued copies");
+        }
 
         book.setTitle(request.getTitle());
         book.setAuthor(request.getAuthor());
         book.setIsbn(request.getIsbn());
-
-        int difference = request.getTotalCopies() - book.getTotalCopies();
         book.setTotalCopies(request.getTotalCopies());
         book.setAvailableCopies(book.getAvailableCopies() + difference);
         book.setDescription(request.getDescription());
 
-        book = bookRepository.save(book);
-        return mapToResponse(book);
+        return mapToResponse(bookRepository.save(book));
     }
 
+    // ================= DELETE BOOK =================
     public void deleteBook(Long id) {
+
         Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Book not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Book not found with id: " + id));
 
         if (book.getAvailableCopies() < book.getTotalCopies()) {
-            throw new RuntimeException("Cannot delete book. Some copies are currently issued");
+            throw new ConflictException(
+                    "Cannot delete book. Some copies are currently issued");
         }
 
         bookRepository.delete(book);
     }
 
+    // ================= GET BOOKS =================
     public List<BookResponse> getAllBooks() {
-        return bookRepository.findAll().stream()
+        return bookRepository.findAll()
+                .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
     public BookResponse getBookById(Long id) {
-        Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Book not found"));
-        return mapToResponse(book);
+        return bookRepository.findById(id)
+                .map(this::mapToResponse)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Book not found with id: " + id));
     }
 
+    // ================= ISSUE BOOK (CURRENT USER) =================
     @Transactional
     public String issueBook(Long bookId) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        User user = getCurrentUser();
 
         Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new RuntimeException("Book not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Book not found"));
 
         if (book.getAvailableCopies() <= 0) {
-            throw new RuntimeException("Book is not available");
+            throw new ConflictException("Book is not available");
         }
 
-        if (bookIssueRepository.findByUserAndBookIdAndStatus(user, bookId, BookIssue.Status.ISSUED).isPresent()) {
-            throw new RuntimeException("You have already issued this book");
+        if (bookIssueRepository
+                .findByUserAndBookIdAndStatus(user, bookId, BookIssue.Status.ISSUED)
+                .isPresent()) {
+
+            throw new ConflictException("You have already issued this book");
         }
 
         book.setAvailableCopies(book.getAvailableCopies() - 1);
@@ -111,32 +138,40 @@ public class BookService {
         return "Book issued successfully";
     }
 
+    // ================= USER ISSUED BOOKS =================
     public List<Long> getUserIssuedBookIds() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<BookIssue> issuedBooks = bookIssueRepository.findByUserAndStatus(user, BookIssue.Status.ISSUED);
-        return issuedBooks.stream()
+        User user = getCurrentUser();
+
+        return bookIssueRepository
+                .findByUserAndStatus(user, BookIssue.Status.ISSUED)
+                .stream()
                 .map(issue -> issue.getBook().getId())
                 .collect(Collectors.toList());
     }
 
-    // Add this method to issue book to specific user (Admin feature)
+    // ================= ISSUE BOOK TO USER (ADMIN) =================
     @Transactional
     public String issueBookToUser(Long bookId, Long userId) {
+
         User targetUser = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
         Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new RuntimeException("Book not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Book not found"));
 
         if (book.getAvailableCopies() <= 0) {
-            throw new RuntimeException("Book is not available");
+            throw new ConflictException("Book is not available");
         }
 
-        if (bookIssueRepository.findByUserAndBookIdAndStatus(targetUser, bookId, BookIssue.Status.ISSUED).isPresent()) {
-            throw new RuntimeException("This user has already issued this book");
+        if (bookIssueRepository
+                .findByUserAndBookIdAndStatus(
+                        targetUser, bookId, BookIssue.Status.ISSUED)
+                .isPresent()) {
+
+            throw new ConflictException("User has already issued this book");
         }
 
         book.setAvailableCopies(book.getAvailableCopies() - 1);
@@ -152,25 +187,16 @@ public class BookService {
         return "Book issued successfully to " + targetUser.getUsername();
     }
 
-    // Get all users (for admin to select)
-    public List<UserSummaryDTO> getAllUsers() {
-        return userRepository.findAll().stream()
-                .map(user -> new UserSummaryDTO(
-                        user.getId(),
-                        user.getUsername(),
-                        user.getEmail(),
-                        user.getRole().name()
-                ))
-                .collect(Collectors.toList());
-    }
+    // ================= RETURN BOOK =================
     @Transactional
     public String returnBook(Long bookId) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        BookIssue issue = bookIssueRepository.findByUserAndBookIdAndStatus(user, bookId, BookIssue.Status.ISSUED)
-                .orElseThrow(() -> new RuntimeException("No active issue found for this book"));
+        User user = getCurrentUser();
+
+        BookIssue issue = bookIssueRepository
+                .findByUserAndBookIdAndStatus(user, bookId, BookIssue.Status.ISSUED)
+                .orElseThrow(() ->
+                        new ForbiddenException("No active issue found for this book"));
 
         Book book = issue.getBook();
         book.setAvailableCopies(book.getAvailableCopies() + 1);
@@ -181,6 +207,28 @@ public class BookService {
         bookIssueRepository.save(issue);
 
         return "Book returned successfully";
+    }
+
+    // ================= ADMIN USERS =================
+    public List<UserSummaryDTO> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(user -> new UserSummaryDTO(
+                        user.getId(),
+                        user.getUsername(),
+                        user.getEmail(),
+                        user.getRole().name()))
+                .collect(Collectors.toList());
+    }
+
+    // ================= HELPERS =================
+    private User getCurrentUser() {
+        String username =
+                SecurityContextHolder.getContext().getAuthentication().getName();
+
+        return userRepository.findByUsername(username)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Authenticated user not found"));
     }
 
     private BookResponse mapToResponse(Book book) {
@@ -196,3 +244,4 @@ public class BookService {
         return response;
     }
 }
+

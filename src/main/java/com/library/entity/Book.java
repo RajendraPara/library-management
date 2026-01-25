@@ -32,4 +32,7 @@ public class Book {
 
     @Column(length = 1000)
     private String description;
+
+    public Book(Object o, String cleanCode, String s, String s1, int i, int i1, String s2) {
+    }
 }

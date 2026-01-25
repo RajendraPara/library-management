@@ -12,4 +12,7 @@ public class AuthResponse {
     private String username;
     private String role;
     private String message;
+
+    public AuthResponse(Object o, Object o1, Object o2, String message) {
+    }
 }
